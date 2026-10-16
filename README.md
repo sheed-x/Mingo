@@ -35,11 +35,11 @@ Paste or share a link from YouTube, TikTok, Instagram and 1,000+ other sites, pi
 
 ## 📸 Screenshots
 
-| Home | Share sheet | Library |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/home.png" width="240" /> | <img src="docs/screenshots/share-sheet.png" width="240" /> | <img src="docs/screenshots/library.png" width="240" /> |
-| **Arabic (RTL)** | **Clear errors** | **About** |
-| <img src="docs/screenshots/arabic.png" width="240" /> | <img src="docs/screenshots/errors.png" width="240" /> | <img src="docs/screenshots/about.png" width="240" /> |
+| Home | Share sheet | Library | Downloads |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/home.png" width="200" /> | <img src="docs/screenshots/share-sheet.png" width="200" /> | <img src="docs/screenshots/library.png" width="200" /> | <img src="docs/screenshots/downloads.png" width="200" /> |
+| **Settings** | **Arabic (RTL)** | **Clear errors** | **About** |
+| <img src="docs/screenshots/settings.png" width="200" /> | <img src="docs/screenshots/arabic.png" width="200" /> | <img src="docs/screenshots/errors.png" width="200" /> | <img src="docs/screenshots/about.png" width="200" /> |
 
 ## 📥 Download
 
