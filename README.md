@@ -121,7 +121,7 @@ Mingo is free software, released under the [GNU General Public License v3.0](LIC
 
 ## 👤 Developer
 
-**suhaib (sheed)** 🦩
+**suhaib (sheed)** 🦩 In collaboration with Cluade code 🧡
 
 - GitHub: [@sheed-x](https://github.com/sheed-x)
 - Email: [salmqalh8@gmail.com](mailto:salmqalh8@gmail.com)
