@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-path name="downloads" path="Download/" />
+    <!-- Update APKs downloaded by the in-app updater. -->
+    <cache-path name="updates" path="updates/" />
 </paths>

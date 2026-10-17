@@ -44,10 +44,17 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         if (!app.engine.awaitReady()) return fail(MingoError(ErrorKind.Engine))
         if (!applicationContext.isOnline()) return fail(MingoError(ErrorKind.Offline))
 
-        val workDir = File(applicationContext.cacheDir, "downloads/$taskId").apply {
-            deleteRecursively()
-            mkdirs()
+        // Wait for a free slot; the user decides how many downloads run side by side.
+        try {
+            manager.acquireSlot()
+        } catch (e: CancellationException) {
+            if (!manager.consumePausing(taskId)) canceled()
+            throw e
         }
+
+        // Kept between runs: when a paused download resumes, yt-dlp continues its partial files.
+        val workDir = manager.workDir(taskId).apply { mkdirs() }
+        var paused = false
         // The yt-dlp call blocks, so cancellation has to kill its process explicitly.
         val cancelHook = currentCoroutineContext().job.invokeOnCompletion { cause ->
             if (cause is CancellationException) YoutubeDL.getInstance().destroyProcessById(taskId)
@@ -85,15 +92,24 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             DownloadNotifications.notifyDone(applicationContext, taskId, options.title, saved.uri, saved.mimeType)
             Result.success()
         } catch (e: YoutubeDL.CanceledException) {
-            canceled()
+            paused = manager.consumePausing(taskId)
+            if (paused) pausedResult() else canceled()
         } catch (e: CancellationException) {
-            canceled()
+            paused = manager.consumePausing(taskId)
+            if (paused) pausedResult() else canceled()
             throw e
         } catch (e: Exception) {
-            if (isStopped) canceled() else fail(applicationContext.toMingoError(e))
+            when {
+                isStopped -> {
+                    paused = manager.consumePausing(taskId)
+                    if (paused) pausedResult() else canceled()
+                }
+                else -> fail(applicationContext.toMingoError(e))
+            }
         } finally {
+            manager.releaseSlot()
             cancelHook.dispose()
-            workDir.deleteRecursively()
+            if (!paused) workDir.deleteRecursively()
         }
     }
 
@@ -119,6 +135,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         YoutubeDL.getInstance().execute(request, taskId) { progress, eta, line ->
             Log.v(TAG, line)
             manager.update(taskId) {
+                if (!it.isActive) return@update it
                 it.copy(
                     status = DownloadTask.Status.Running,
                     progress = (progress / 100f).coerceIn(0f, 1f),
@@ -145,6 +162,12 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         manager.update(taskId) { it.copy(status = DownloadTask.Status.Failed, error = error) }
         DownloadNotifications.cancelProgress(applicationContext, taskId)
         DownloadNotifications.notifyFailed(applicationContext, taskId, options.title, applicationContext.getString(error.kind.title))
+        return Result.failure()
+    }
+
+    /** The manager already marked the task paused; just clear the progress notification. */
+    private fun pausedResult(): Result {
+        DownloadNotifications.cancelProgress(applicationContext, taskId)
         return Result.failure()
     }
 

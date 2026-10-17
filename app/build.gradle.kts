@@ -14,8 +14,8 @@ android {
         applicationId = "app.mingo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     // Release signing reads keystore.properties (never committed). Without it, release builds are unsigned.

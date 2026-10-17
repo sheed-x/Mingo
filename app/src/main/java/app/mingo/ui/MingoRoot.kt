@@ -1,5 +1,8 @@
 package app.mingo.ui
 
+import kotlinx.coroutines.flow.map
+import androidx.compose.runtime.remember
+import app.mingo.update.UpdateDialog
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -68,6 +71,15 @@ fun MingoRoot() {
         topLevelRoutes.indexOfFirst { route -> backStackEntry?.destination?.hasRoute(route::class) == true }.coerceAtLeast(0)
     }
     val hazeState = rememberHazeState()
+
+    // Quietly look for a newer Mingo on GitHub when the app opens (at most every few hours).
+    val app = LocalContext.current.applicationContext as MingoApp
+    val autoCheckUpdates by remember { app.settings.settings.map { it.autoCheckUpdates } }
+        .collectAsStateWithLifecycle(initialValue = app.settings.settings.value.autoCheckUpdates)
+    LaunchedEffect(autoCheckUpdates) {
+        if (autoCheckUpdates) app.updates.checkIfDue()
+    }
+    UpdateDialog(app.updates)
 
     val navItems = listOf(
         NavItem(MingoIcons.Home, stringResource(R.string.nav_home)),

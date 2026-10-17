@@ -1,5 +1,7 @@
 package app.mingo.ui.library
 
+import app.mingo.data.LibraryView
+import app.mingo.MingoApp
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
@@ -85,14 +87,23 @@ fun LibraryScreen(viewModel: LibraryViewModel = viewModel(factory = LibraryViewM
     var actionsFor by remember { mutableStateOf<LibraryItem?>(null) }
     var confirmDelete by remember { mutableStateOf<LibraryItem?>(null) }
     var showSort by remember { mutableStateOf(false) }
+    var showDisplay by remember { mutableStateOf(false) }
+    val app = LocalContext.current.applicationContext as MingoApp
+    val appSettings by app.settings.settings.collectAsStateWithLifecycle()
+    val settingsScope = rememberCoroutineScope()
+    val view = appSettings.libraryView
     val context = LocalContext.current
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 160.dp),
+        columns = when (view) {
+            LibraryView.Grid -> GridCells.Adaptive(minSize = 160.dp)
+            LibraryView.Compact -> GridCells.Adaptive(minSize = 104.dp)
+            LibraryView.List -> GridCells.Fixed(1)
+        },
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = LocalBottomBarPadding.current + 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (view == LibraryView.Compact) 8.dp else 12.dp),
+        verticalArrangement = Arrangement.spacedBy(if (view == LibraryView.Compact) 8.dp else 12.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             ScreenTitle(
@@ -130,6 +141,17 @@ fun LibraryScreen(viewModel: LibraryViewModel = viewModel(factory = LibraryViewM
                         modifier = Modifier.weight(1f),
                         horizontalPadding = 0.dp,
                     )
+                    FilledTonalIconButton(onClick = { showDisplay = true }) {
+                        MingoIcon(
+                            when (view) {
+                                LibraryView.Grid -> MingoIcons.Grid
+                                LibraryView.Compact -> MingoIcons.GridSmall
+                                LibraryView.List -> MingoIcons.ListView
+                            },
+                            contentDescription = stringResource(R.string.library_display),
+                            size = 20.dp,
+                        )
+                    }
                     FilledTonalIconButton(onClick = { showSort = true }) {
                         MingoIcon(MingoIcons.Sort, contentDescription = stringResource(R.string.sort_title), size = 20.dp)
                     }
@@ -148,14 +170,32 @@ fun LibraryScreen(viewModel: LibraryViewModel = viewModel(factory = LibraryViewM
             }
         }
 
-        items(state.visible, key = { it.id }) { item ->
-            LibraryCard(
-                item = item,
-                onPlay = { play(context, item) },
-                onMore = { actionsFor = item },
-                modifier = Modifier.animateItem(),
-            )
+        groupItems(state.visible, appSettings.libraryGroup).forEach { group ->
+            group.title?.let { title ->
+                item(span = { GridItemSpan(maxLineSpan) }, key = "header-$title", contentType = "header") {
+                    GroupHeader(groupLabel(title), group.items.size, Modifier.animateItem())
+                }
+            }
+            items(group.items, key = { it.id }, contentType = { view }) { item ->
+                val onPlay = { play(context, item) }
+                val onMore = { actionsFor = item }
+                when (view) {
+                    LibraryView.Grid -> LibraryCard(item, onPlay, onMore, Modifier.animateItem())
+                    LibraryView.Compact -> CompactCard(item, onPlay, onMore, Modifier.animateItem())
+                    LibraryView.List -> ListRowCard(item, onPlay, onMore, Modifier.animateItem())
+                }
+            }
         }
+    }
+
+    if (showDisplay) {
+        DisplaySheet(
+            view = view,
+            group = appSettings.libraryGroup,
+            onView = { v -> settingsScope.launch { app.settings.update { it.copy(libraryView = v) } } },
+            onGroup = { g -> settingsScope.launch { app.settings.update { it.copy(libraryGroup = g) } } },
+            onDismiss = { showDisplay = false },
+        )
     }
 
     actionsFor?.let { item ->

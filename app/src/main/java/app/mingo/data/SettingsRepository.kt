@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,10 @@ class SettingsRepository(context: Context, scope: CoroutineScope) {
             autoPasteLinks = this[Keys.autoPasteLinks] ?: d.autoPasteLinks,
             autoAnalyze = this[Keys.autoAnalyze] ?: d.autoAnalyze,
             instantShareDownload = this[Keys.instantShareDownload] ?: d.instantShareDownload,
+            maxParallelDownloads = (this[Keys.maxParallelDownloads] ?: d.maxParallelDownloads).coerceIn(1, 5),
+            libraryView = enumOr(Keys.libraryView, d.libraryView),
+            libraryGroup = enumOr(Keys.libraryGroup, d.libraryGroup),
+            autoCheckUpdates = this[Keys.autoCheckUpdates] ?: d.autoCheckUpdates,
         )
     }
 
@@ -66,6 +71,10 @@ class SettingsRepository(context: Context, scope: CoroutineScope) {
         this[Keys.autoPasteLinks] = s.autoPasteLinks
         this[Keys.autoAnalyze] = s.autoAnalyze
         this[Keys.instantShareDownload] = s.instantShareDownload
+        this[Keys.maxParallelDownloads] = s.maxParallelDownloads
+        this[Keys.libraryView] = s.libraryView.name
+        this[Keys.libraryGroup] = s.libraryGroup.name
+        this[Keys.autoCheckUpdates] = s.autoCheckUpdates
     }
 
     private inline fun <reified E : Enum<E>> Preferences.enumOr(key: Preferences.Key<String>, default: E): E =
@@ -88,5 +97,9 @@ class SettingsRepository(context: Context, scope: CoroutineScope) {
         val autoPasteLinks = booleanPreferencesKey("auto_paste_links")
         val autoAnalyze = booleanPreferencesKey("auto_analyze")
         val instantShareDownload = booleanPreferencesKey("instant_share_download")
+        val maxParallelDownloads = intPreferencesKey("max_parallel_downloads")
+        val libraryView = stringPreferencesKey("library_view")
+        val libraryGroup = stringPreferencesKey("library_group")
+        val autoCheckUpdates = booleanPreferencesKey("auto_check_updates")
     }
 }

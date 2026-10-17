@@ -38,6 +38,10 @@ enum class AudioBitrate(val kbps: Int) {
     val label: String get() = "⁦$kbps kbps⁩"
 }
 
+enum class LibraryView { Grid, Compact, List }
+
+enum class LibraryGroup { None, Platform, Date }
+
 /** Everything the user can configure. Download-related fields are the defaults the link panel starts from. */
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.System,
@@ -53,8 +57,14 @@ data class AppSettings(
     val embedChapters: Boolean = true,
     val embedSubtitles: Boolean = false,
     val sponsorBlock: Boolean = false,
-    val autoPasteLinks: Boolean = true,
+    /** Off by default: reading the clipboard should be something the user opts into. */
+    val autoPasteLinks: Boolean = false,
     val autoAnalyze: Boolean = true,
     /** Sharing a link downloads it straight away with these defaults instead of showing the options sheet. */
     val instantShareDownload: Boolean = false,
+    /** How many downloads may run at the same time; the rest wait in the queue. */
+    val maxParallelDownloads: Int = 3,
+    val libraryView: LibraryView = LibraryView.Grid,
+    val libraryGroup: LibraryGroup = LibraryGroup.None,
+    val autoCheckUpdates: Boolean = true,
 )

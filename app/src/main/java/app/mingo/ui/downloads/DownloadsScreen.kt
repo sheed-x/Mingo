@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,7 +60,7 @@ fun DownloadsScreen() {
     val context = LocalContext.current
     val manager = (context.applicationContext as MingoApp).downloadManager
     val tasks by manager.tasks.collectAsStateWithLifecycle()
-    val hasFinished = tasks.any { !it.isActive }
+    val hasFinished = tasks.any { !it.isUnfinished }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTitle(
@@ -136,14 +137,15 @@ private fun DownloadCard(task: DownloadTask, manager: DownloadManager, modifier:
                 Spacer(Modifier.width(4.dp))
                 TaskAction(task, manager)
             }
-            if (task.status == DownloadTask.Status.Running || task.status == DownloadTask.Status.Processing ||
-                task.status == DownloadTask.Status.Queued
-            ) {
+            if (task.isUnfinished) {
                 Spacer(Modifier.height(12.dp))
-                if (task.status == DownloadTask.Status.Running && task.progress > 0f) {
-                    LinearWavyProgressIndicator(progress = { task.progress }, modifier = Modifier.fillMaxWidth())
-                } else {
-                    LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+                when {
+                    // A paused download shows a still, flat bar so it reads as "stopped here".
+                    task.status == DownloadTask.Status.Paused ->
+                        LinearProgressIndicator(progress = { task.progress }, modifier = Modifier.fillMaxWidth())
+                    task.status == DownloadTask.Status.Running && task.progress > 0f ->
+                        LinearWavyProgressIndicator(progress = { task.progress }, modifier = Modifier.fillMaxWidth())
+                    else -> LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -166,6 +168,10 @@ private fun StatusLine(task: DownloadTask) {
             task.etaSeconds.takeIf { it > 0 }?.let { formatEta(it) },
         ).joinToString(" · ")
         DownloadTask.Status.Processing -> stringResource(R.string.status_processing)
+        DownloadTask.Status.Paused -> listOfNotNull(
+            stringResource(R.string.status_paused),
+            "${(task.progress * 100).toInt()}%".takeIf { task.progress > 0f },
+        ).joinToString(" · ")
         DownloadTask.Status.Completed -> stringResource(R.string.status_completed, task.options.summary)
         DownloadTask.Status.Failed -> task.error?.let { stringResource(it.kind.title) } ?: stringResource(R.string.status_failed)
         DownloadTask.Status.Canceled -> stringResource(R.string.status_canceled)
@@ -177,10 +183,27 @@ private fun StatusLine(task: DownloadTask) {
 private fun TaskAction(task: DownloadTask, manager: DownloadManager) {
     val context = LocalContext.current
     when (task.status) {
-        DownloadTask.Status.Queued, DownloadTask.Status.Running, DownloadTask.Status.Processing ->
-            FilledTonalIconButton(onClick = { manager.cancel(task.id) }) {
+        DownloadTask.Status.Queued, DownloadTask.Status.Running -> Row {
+            IconButton(onClick = { manager.cancel(task.id) }) {
                 MingoIcon(MingoIcons.Stop, contentDescription = stringResource(R.string.action_cancel), size = 20.dp)
             }
+            FilledTonalIconButton(onClick = { manager.pause(task.id) }) {
+                MingoIcon(MingoIcons.Pause, contentDescription = stringResource(R.string.action_pause), size = 20.dp)
+            }
+        }
+        // Merging/converting can't be resumed midway, so only cancel is offered.
+        DownloadTask.Status.Processing ->
+            IconButton(onClick = { manager.cancel(task.id) }) {
+                MingoIcon(MingoIcons.Stop, contentDescription = stringResource(R.string.action_cancel), size = 20.dp)
+            }
+        DownloadTask.Status.Paused -> Row {
+            IconButton(onClick = { manager.cancel(task.id) }) {
+                MingoIcon(MingoIcons.Stop, contentDescription = stringResource(R.string.action_cancel), size = 20.dp)
+            }
+            FilledTonalIconButton(onClick = { manager.resume(task.id) }) {
+                MingoIcon(MingoIcons.Play, contentDescription = stringResource(R.string.action_resume), size = 20.dp)
+            }
+        }
         DownloadTask.Status.Completed -> Row {
             IconButton(onClick = { share(context, task) }) {
                 MingoIcon(MingoIcons.Share, contentDescription = stringResource(R.string.action_share), size = 20.dp)

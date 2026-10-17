@@ -1,5 +1,8 @@
 package app.mingo.ui.settings
 
+import app.mingo.update.UpdateState
+import androidx.compose.runtime.LaunchedEffect
+import android.widget.Toast
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
@@ -231,6 +234,18 @@ fun SettingsScreen(onOpenAbout: () -> Unit = {}) {
                     }
                 },
             )
+            val parallelTitle = stringResource(R.string.settings_parallel)
+            ValueRow(
+                icon = MingoIcons.Layers,
+                title = parallelTitle,
+                description = stringResource(R.string.settings_parallel_desc),
+                value = "${settings.maxParallelDownloads}",
+                onClick = {
+                    choice = Choice(parallelTitle, (1..5).toList(), settings.maxParallelDownloads, { "$it" }) { v ->
+                        update { it.copy(maxParallelDownloads = v) }
+                    }
+                },
+            )
         }
 
         SectionLabel(stringResource(R.string.settings_processing))
@@ -269,6 +284,29 @@ fun SettingsScreen(onOpenAbout: () -> Unit = {}) {
                 description = stringResource(R.string.extra_sponsorblock_desc),
                 checked = settings.sponsorBlock,
                 onCheckedChange = { v -> update { it.copy(sponsorBlock = v) } },
+            )
+        }
+
+        SectionLabel(stringResource(R.string.settings_updates))
+        val updateState by app.updates.state.collectAsStateWithLifecycle()
+        val upToDate = stringResource(R.string.update_none)
+        LaunchedEffect(updateState) {
+            if (updateState == UpdateState.UpToDate) Toast.makeText(context, upToDate, Toast.LENGTH_SHORT).show()
+        }
+        Group {
+            ToggleRow(
+                icon = MingoIcons.Refresh,
+                title = stringResource(R.string.settings_auto_update),
+                description = stringResource(R.string.settings_auto_update_desc),
+                checked = settings.autoCheckUpdates,
+                onCheckedChange = { v -> update { it.copy(autoCheckUpdates = v) } },
+            )
+            ValueRow(
+                icon = MingoIcons.Download,
+                title = stringResource(R.string.settings_check_updates),
+                description = stringResource(R.string.settings_check_updates_desc, app.updates.currentVersion),
+                value = if (updateState == UpdateState.Checking) stringResource(R.string.update_checking) else "",
+                onClick = { app.updates.check() },
             )
         }
 

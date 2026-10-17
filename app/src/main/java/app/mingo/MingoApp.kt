@@ -6,6 +6,7 @@ import app.mingo.data.SettingsRepository
 import app.mingo.download.DownloadManager
 import app.mingo.download.DownloadNotifications
 import app.mingo.engine.MingoEngine
+import app.mingo.update.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,13 +24,16 @@ class MingoApp : Application() {
         private set
     lateinit var library: LibraryRepository
         private set
+    lateinit var updates: UpdateManager
+        private set
 
     override fun onCreate() {
         super.onCreate()
         settings = SettingsRepository(this, appScope)
         engine = MingoEngine(this, appScope)
-        downloadManager = DownloadManager(this)
+        downloadManager = DownloadManager(this, appScope, settings)
         library = LibraryRepository(this, appScope)
+        updates = UpdateManager(this, appScope)
         DownloadNotifications.createChannels(this)
         engine.initialize()
     }

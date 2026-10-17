@@ -78,6 +78,11 @@ object MingoIcons {
     val Copy = Lucide.drawable.lucide_ic_copy
     val External = Lucide.drawable.lucide_ic_external_link
     val Play = Lucide.drawable.lucide_ic_play
+    val Pause = Lucide.drawable.lucide_ic_pause
+    val Grid = Lucide.drawable.lucide_ic_layout_grid
+    val GridSmall = Lucide.drawable.lucide_ic_grid_3x3
+    val ListView = Lucide.drawable.lucide_ic_list
+    val Download = Lucide.drawable.lucide_ic_download
     val Drive = Lucide.drawable.lucide_ic_hard_drive
     val Calendar = Lucide.drawable.lucide_ic_calendar
 

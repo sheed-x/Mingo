@@ -12,10 +12,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.work.WorkManager
 import app.mingo.MainActivity
 import app.mingo.R
-import java.util.UUID
 
 object DownloadNotifications {
 
@@ -53,7 +51,7 @@ object DownloadNotifications {
                 .joinToString(" · ")
             else -> context.getString(R.string.status_queued)
         }
-        return NotificationCompat.Builder(context, CHANNEL_PROGRESS)
+        val builder = NotificationCompat.Builder(context, CHANNEL_PROGRESS)
             .setSmallIcon(R.drawable.ic_stat_mingo)
             .setContentTitle(title)
             .setContentText(text)
@@ -62,11 +60,11 @@ object DownloadNotifications {
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setContentIntent(openAppIntent(context))
-            .addAction(
-                0,
-                context.getString(R.string.action_cancel),
-                WorkManager.getInstance(context).createCancelPendingIntent(UUID.fromString(taskId)),
-            )
+        if (task?.canPause != false) {
+            builder.addAction(0, context.getString(R.string.action_pause), DownloadActionReceiver.pauseIntent(context, taskId))
+        }
+        return builder
+            .addAction(0, context.getString(R.string.action_cancel), DownloadActionReceiver.cancelIntent(context, taskId))
             .build()
     }
 
